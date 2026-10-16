@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOCCA · Implementation Control Center</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23111'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23B8924A' font-family='Georgia' font-weight='bold'%3EM%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --ink:#111;--char:#2a2a2a;--gold:#b8924a;--gold-l:#f3ead6;--ivory:#fbf8f2;--line:#e7e0d0;--bg:#f5f1e8;
+  --grey:#8c8c8c;--grey-l:#f1f0ee;--green:#1e7b55;--green-l:#e1f2e9;--red:#c0392b;--red-l:#fbe4e1;
+  --amber:#a86400;--amber-l:#fdf0d5;--blue:#1f4e9e;--blue-l:#e4ecf8;--card:#fff;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Arial,Helvetica,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px 40px}
+header{background:var(--ink);color:#fff;border-bottom:4px solid var(--gold)}
+.hd{max-width:1280px;margin:0 auto;padding:18px 20px 14px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.brand h1{margin:0;font:700 34px/1 Georgia,serif;letter-spacing:.5px}
+.brand p{margin:4px 0 0;font:italic 13px Georgia,serif;color:#d9c9a3}
+.hr{text-align:right}
+.hr .t{color:var(--gold);font-weight:700;letter-spacing:2px;font-size:12px}
+.hr .d{font-weight:700;font-size:15px;margin-top:4px}
+.hr .u{color:#bdbdbd;font-size:11px;margin-top:2px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 0}
+.bar .sp{flex:1}
+select,input[type=search]{font:13px Arial;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+button,.btn{font:700 12px Arial;padding:9px 14px;border-radius:8px;border:1px solid var(--gold);background:#fff;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}
+button.primary,.btn.primary{background:var(--ink);color:var(--gold);border-color:var(--ink)}
+button:hover,.btn:hover{filter:brightness(.96)}
+.spin{animation:sp 1s linear infinite;display:inline-block}@keyframes sp{to{transform:rotate(360deg)}}
+.notice{border-radius:10px;padding:10px 14px;margin:10px 0;font-size:13px}
+.notice.demo{background:var(--amber-l);color:var(--amber);border:1px solid #f0d9a1}
+.notice.err{background:var(--red-l);color:var(--red);border:1px solid #f2b8b1}
+.strip{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;background:var(--ivory);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;color:var(--char)}
+.strip .ph{color:var(--amber)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:14px 0 6px}
+.kpi{background:var(--ivory);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:10px;padding:14px 10px;text-align:center}
+.kpi .l{color:var(--gold);font-weight:700;font-size:10.5px;letter-spacing:1.4px}
+.kpi .v{font:700 38px/1.15 Georgia,serif;margin:6px 0 4px}
+.kpi .c{color:var(--grey);font-size:11px}
+.good{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}.mute{color:var(--grey)}
+h2{margin:26px 0 10px;font-size:15px;letter-spacing:.3px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
+h2 small{font-weight:400;color:var(--grey);font-size:12px;margin-left:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.panel>.ph{padding:9px 14px;font-weight:700;font-size:12px;letter-spacing:.6px}
+.ph.red{background:var(--red-l);color:var(--red)}.ph.amber{background:var(--amber-l);color:var(--amber)}.ph.dark{background:var(--char);color:#fff}
+.list{max-height:420px;overflow:auto}
+.q{display:flex;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);align-items:flex-start}
+.q .n{font-weight:700;width:22px;flex:none;text-align:center}
+.q .a{flex:1}
+.q .o{flex:none;max-width:42%;text-align:right;font-weight:700;font-size:12px;color:var(--char)}
+.empty{padding:22px 14px;text-align:center;color:var(--green);font-weight:700}
+table{border-collapse:collapse;width:100%}
+th{background:var(--grey-l);color:var(--grey);font-size:10.5px;letter-spacing:.5px;text-align:center;padding:7px 6px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:14px}
+td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:center;font-size:13px}
+td:first-child{font-weight:700}
+.bartrack{display:inline-block;width:80px;height:8px;background:var(--grey-l);border-radius:4px;overflow:hidden;vertical-align:middle}
+.bartrack i{display:block;height:100%;background:var(--gold)}
+.pill{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
+.p-done{background:var(--green-l);color:var(--green)}.p-miss{background:var(--red);color:#fff}.p-pend{background:var(--amber-l);color:var(--amber)}.p-na{color:var(--grey)}
+.s-ver{background:var(--green);color:#fff}.s-mon{background:var(--green-l);color:var(--green)}.s-iss{background:var(--amber-l);color:var(--amber)}.s-prog{background:var(--blue-l);color:var(--blue)}.s-blk{background:var(--red);color:#fff}.s-not{background:var(--grey-l);color:var(--grey)}
+.ph-live{background:var(--ink);color:var(--gold)}.ph-start{background:var(--gold-l);color:var(--amber)}.ph-next{background:var(--grey-l);color:var(--grey)}
+.cnt{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}
+.dots{display:flex;gap:2px;flex-wrap:nowrap}
+.dot{width:9px;height:14px;border-radius:2px;background:var(--grey-l);flex:none}
+.dot.g{background:#37a679}.dot.r{background:var(--red)}.dot.n{background:#d4d4d4}.dot.f{background:#f7f5f0}.dot.t{outline:2px solid var(--gold)}
+.tbl-wrap{overflow:auto;max-height:560px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.tbl-wrap td,.tbl-wrap th{text-align:left}
+.tbl-wrap td.c,.tbl-wrap th.c{text-align:center}
+.tbl-wrap th{position:sticky;top:0;z-index:1}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:6px 11px;border:1px solid var(--line);border-radius:16px;background:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--gold);border-color:var(--ink)}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 12px 6px}
+.chart h3{margin:0 0 6px;font-size:13px}
+.lg{font-size:11px;color:var(--grey);display:flex;gap:12px;margin:2px 0 4px}
+.lg b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.pill-live{display:inline-block;border:1px solid #37a679;color:#7be0b4;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill-live.demo{border-color:#e0a23a;color:#f3c777}.pill-live.err{border-color:#e0594a;color:#ff9b8f}
+.hbtn{background:#1f6fd6;color:#fff;border:0;border-radius:8px;padding:10px 16px;font:700 13px Arial;cursor:pointer}
+.hbtn:hover{filter:brightness(1.1)}
+.src{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-top:26px}
+.src h3{margin:0 0 4px;font-size:16px}
+.src p{margin:2px 0 10px;color:var(--grey);font-size:13px}
+.src .row{display:flex;gap:10px;flex-wrap:wrap}
+.src input[type=text]{flex:1;min-width:260px;font:14px Arial;padding:11px 12px;border:1px solid var(--line);border-radius:8px}
+.src .go{background:var(--ink);color:var(--gold);border:0;border-radius:8px;padding:11px 18px;font:700 13px Arial;cursor:pointer}
+.src .alt{background:var(--grey-l);color:var(--char);border:1px solid var(--line);border-radius:8px;padding:11px 16px;font:700 13px Arial;cursor:pointer}
+.src .st{margin-top:10px;font-size:13px;color:var(--char)}
+.src details{margin-top:10px;font-size:12px;color:var(--grey)}
+.src code{background:var(--grey-l);padding:1px 5px;border-radius:4px}
+footer{text-align:center;color:var(--grey);font-size:11px;margin-top:30px;padding-top:12px;border-top:1px solid var(--gold)}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2,.charts{grid-template-columns:1fr}.hr{text-align:left}.kpi .v{font-size:32px}}
+</style>
+</head>
+<body>
+
+<header><div class="hd">
+  <div class="brand"><h1>MOCCA</h1><p>makes you shopaholic</p></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <span class="pill-live" id="pill">Loading…</span>
+    <button class="hbtn" id="refreshBtn"><span id="rIcon">↻</span> Refresh data</button>
+  </div>
+  <div class="hr" style="flex-basis:100%;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:baseline;border-top:1px solid #333;padding-top:10px"><div class="t">IMPLEMENTATION CONTROL CENTER</div><div class="d" id="repDate" style="margin:0">—</div></div>
+</div></header>
+
+<div class="wrap">
+  <div class="bar">
+    <select id="deptSel" title="Filter by department"><option value="">All departments</option></select>
+    <select id="brSel" title="Filter by branch"><option value="">All branches</option></select>
+    <span class="sp"></span>
+    <a class="btn" id="sheetBtn" target="_blank" rel="noopener" style="display:none">Open Tracker Sheet ↗</a>
+  </div>
+  <div id="msg"></div>
+  <div class="strip"><span id="stripL">—</span><span class="ph" id="stripR">—</span></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2>TODAY'S ACTION QUEUE <small>who to contact right now</small></h2>
+  <div class="grid2">
+    <div class="panel"><div class="ph red">✗ &nbsp;NOT DONE TODAY · CONTACT THE OWNER <span id="nMiss"></span></div><div class="list" id="qMiss"></div></div>
+    <div class="panel"><div class="ph amber">○ &nbsp;NOT YET MARKED TODAY · CHECK &amp; MARK <span id="nPend"></span></div><div class="list" id="qPend"></div></div>
+  </div>
+
+  <h2>SCORECARDS <small>score = ✓ done ÷ checks expected so far · unmarked or ✗ both count as not done</small></h2>
+  <div class="grid2">
+    <div class="panel"><div class="ph dark">BY OWNER · WHO TO CALL</div><div id="scOwner"></div></div>
+    <div class="panel"><div class="ph dark">BY DEPARTMENT</div><div id="scDept"></div></div>
+    <div class="panel"><div class="ph dark">BY WORKSTREAM</div><div id="scWs"></div></div>
+    <div class="panel"><div class="ph dark">BY BRANCH</div><div id="scBr"></div></div>
+  </div>
+
+  <h2>ROLLOUT &amp; FOLLOW-UPS</h2>
+  <div class="grid2">
+    <div class="panel"><div class="ph dark">ROLLOUT STATUS · every control</div><div id="rollout"></div></div>
+    <div class="panel"><div class="ph dark">FOLLOW-UP LOG</div><div id="logBox"></div></div>
+  </div>
+
+  <h2>DAILY TREND <small>checks marked per day · daily completion %</small></h2>
+  <div class="charts">
+    <div class="chart"><h3>Checks marked per day</h3><div class="lg"><span><b style="background:#37a679"></b>✓ Done</span><span><b style="background:#c0392b"></b>✗ Not done</span></div><div id="ch1"></div></div>
+    <div class="chart"><h3>Daily completion % <span class="mute" style="font-weight:400">(daily controls)</span></h3><div class="lg"><span><b style="background:#b8924a"></b>Completion</span></div><div id="ch2"></div></div>
+  </div>
+
+  <h2>ALL CONTROLS <small id="tblCount"></small></h2>
+  <div class="bar" style="padding-top:0">
+    <input type="search" id="q" placeholder="Search activity, owner, workstream…" style="min-width:260px;flex:1">
+    <div class="chips" id="chips">
+      <span class="chip on" data-f="all">All</span><span class="chip" data-f="miss">✗ Follow up</span><span class="chip" data-f="pend">○ Pending</span><span class="chip" data-f="done">✓ Done</span>
+    </div>
+  </div>
+  <div class="tbl-wrap"><table id="tbl"></table></div>
+
+  <div class="src" id="source">
+    <h3>Data source</h3>
+    <p>Paste your Google Sheet link (shared as “Anyone with the link can view”). Tabs needed: <b>Feed</b> and <b>Feed Log</b> (optional).</p>
+    <div class="row">
+      <input type="text" id="linkIn" placeholder="https://docs.google.com/spreadsheets/d/…/edit?usp=sharing" autocomplete="off">
+      <button class="go" id="connectBtn">Load sheet</button>
+      <button class="alt" id="sampleBtn">Use sample data</button>
+    </div>
+    <div class="st" id="srcMsg"></div>
+    <details><summary>First time? How to prepare the sheet</summary>
+      <ol style="line-height:1.7">
+        <li>In your tracker Google Sheet add a tab named exactly <code>Feed</code> and a tab named <code>Feed Log</code> (formulas are in the README).</li>
+        <li><b>Share → General access → Anyone with the link → Viewer.</b></li>
+        <li>Paste the link above and press <b>Load sheet</b>. The link is remembered on this device.</li>
+        <li>To give management a ready-made link, add <code>?sheet=</code> and your sheet link or ID to the end of this page’s address.</li>
+      </ol>
+    </details>
+  </div>
+
+  <footer>MOCCA · Confidential · Implementation Control &nbsp;|&nbsp; Data is read live from your Google Sheet — change the sheet, press Refresh data.</footer>
+</div>
+
+<script>
+/* ===================================================================
+   CONFIGURATION — edit only this block
+   =================================================================== */
+const CONFIG = {
+  DEFAULT_SHEET_LINK: "",       // optional: your Google Sheet link, so management never has to paste it
+  FEED_TAB: "Feed",             // tab with the tracker feed
+  LOG_TAB: "Feed Log",          // tab with the follow-up log feed (optional)
+  AUTO_REFRESH_MINUTES: 5       // 0 = no auto refresh
+};
+
+/* ---- demo data (shown until a sheet link is loaded) ---- */
+const DEMO_ITEMS = [["IMP-001","HR","Grooming","Edapal","Edapal — Grooming checklist + morning photos submitted (Retail In-Charge)","Daily","Retail In-Charge","Live","Issued – Monitoring"],["IMP-002","Wedding","Grooming","Edapal","Edapal — Grooming checklist + morning photos submitted (Wedding In-Charge)","Daily","Wedding In-Charge","Live","Issued – Monitoring"],["IMP-003","HR","Grooming","CPY","CPY — Grooming checklist + morning photos submitted (Retail In-Charge)","Daily","Retail In-Charge","Live","Issued – Monitoring"],["IMP-004","Wedding","Grooming","CPY","CPY — Grooming checklist + morning photos submitted (Wedding In-Charge)","Daily","Wedding In-Charge","Live","Issued – Monitoring"],["IMP-005","HR","Grooming","Vengara","Vengara — Grooming checklist + morning photos submitted (Retail In-Charge)","Daily","Retail In-Charge","Live","Issued – Monitoring"],["IMP-006","Wedding","Grooming","Vengara","Vengara — Grooming checklist + morning photos submitted (Wedding In-Charge)","Daily","Wedding In-Charge","Live","Issued – Monitoring"],["IMP-007","HR","Grooming","Perinthalmanna","Perinthalmanna — Grooming checklist + morning photos submitted (Retail In-Charge)","Daily","Retail In-Charge","Live","Issued – Monitoring"],["IMP-008","Wedding","Grooming","Perinthalmanna","Perinthalmanna — Grooming checklist + morning photos submitted (Wedding In-Charge)","Daily","Wedding In-Charge","Live","Issued – Monitoring"],["IMP-009","HR","Grooming","Manjeri","Manjeri — Grooming checklist + morning photos submitted (Retail In-Charge)","Daily","Retail In-Charge","Live","Issued – Monitoring"],["IMP-010","Wedding","Grooming","Manjeri","Manjeri — Grooming checklist + morning photos submitted (Wedding In-Charge)","Daily","Wedding In-Charge","Live","Issued – Monitoring"],["IMP-011","HR","Grooming","Nilambur","Nilambur — Grooming checklist + morning photos submitted (Retail In-Charge)","Daily","Retail In-Charge","Live","Issued – Monitoring"],["IMP-012","Wedding","Grooming","Nilambur","Nilambur — Grooming checklist + morning photos submitted (Wedding In-Charge)","Daily","Wedding In-Charge","Live","Issued – Monitoring"],["IMP-013","Sales","DAR","All Branches","DAR submitted by Sales Manager","Daily","Sales Manager","Live","Implemented – Monitoring"],["IMP-014","Wedding","DAR","All Branches","DAR submitted by Wedding Manager","Daily","Wedding Manager","Live","Implemented – Monitoring"],["IMP-015","Sales","DAR","Edapal","DAR submitted by Edapal Retail In-Charge","Daily","Retail In-Charge","Live","Implemented – Monitoring"],["IMP-016","Wedding","DAR","Edapal","DAR submitted by Edapal Wedding In-Charge","Daily","Wedding In-Charge","Live","Implemented – Monitoring"],["IMP-017","Sales","DAR","CPY","DAR submitted by CPY Retail In-Charge","Daily","Retail In-Charge","Live","Implemented – Monitoring"],["IMP-018","Wedding","DAR","CPY","DAR submitted by CPY Wedding In-Charge","Daily","Wedding In-Charge","Live","Implemented – Monitoring"],["IMP-019","Sales","DAR","Vengara","DAR submitted by Vengara Retail In-Charge","Daily","Retail In-Charge","Live","Implemented – Monitoring"],["IMP-020","Wedding","DAR","Vengara","DAR submitted by Vengara Wedding In-Charge","Daily","Wedding In-Charge","Live","Implemented – Monitoring"],["IMP-021","Sales","DAR","Perinthalmanna","DAR submitted by Perinthalmanna Retail In-Charge","Daily","Retail In-Charge","Live","Implemented – Monitoring"],["IMP-022","Wedding","DAR","Perinthalmanna","DAR submitted by Perinthalmanna Wedding In-Charge","Daily","Wedding In-Charge","Live","Implemented – Monitoring"],["IMP-023","Sales","DAR","Manjeri","DAR submitted by Manjeri Retail In-Charge","Daily","Retail In-Charge","Live","Implemented – Monitoring"],["IMP-024","Wedding","DAR","Manjeri","DAR submitted by Manjeri Wedding In-Charge","Daily","Wedding In-Charge","Live","Implemented – Monitoring"],["IMP-025","Sales","DAR","Nilambur","DAR submitted by Nilambur Retail In-Charge","Daily","Retail In-Charge","Live","Implemented – Monitoring"],["IMP-026","Wedding","DAR","Nilambur","DAR submitted by Nilambur Wedding In-Charge","Daily","Wedding In-Charge","Live","Implemented – Monitoring"],["IMP-027","Sales","Retail SOP","Edapal","Edapal — Daily sales vs target recorded and shared","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-028","Sales","Retail SOP","Edapal","Edapal — Walk-ins & conversion tracked","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-029","Sales","Retail SOP","Edapal","Edapal — Customer follow-ups completed and logged","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-030","Sales","Retail SOP","Edapal","Edapal — Store readiness & SOP adherence checked before open","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-031","Sales","Retail SOP","Edapal","Edapal — Pending customer issues updated","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-032","Sales","Retail SOP","CPY","CPY — Daily sales vs target recorded and shared","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-033","Sales","Retail SOP","CPY","CPY — Walk-ins & conversion tracked","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-034","Sales","Retail SOP","CPY","CPY — Customer follow-ups completed and logged","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-035","Sales","Retail SOP","CPY","CPY — Store readiness & SOP adherence checked before open","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-036","Sales","Retail SOP","CPY","CPY — Pending customer issues updated","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-037","Sales","Retail SOP","Vengara","Vengara — Daily sales vs target recorded and shared","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-038","Sales","Retail SOP","Vengara","Vengara — Walk-ins & conversion tracked","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-039","Sales","Retail SOP","Vengara","Vengara — Customer follow-ups completed and logged","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-040","Sales","Retail SOP","Vengara","Vengara — Store readiness & SOP adherence checked before open","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-041","Sales","Retail SOP","Vengara","Vengara — Pending customer issues updated","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-042","Sales","Retail SOP","Perinthalmanna","Perinthalmanna — Daily sales vs target recorded and shared","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-043","Sales","Retail SOP","Perinthalmanna","Perinthalmanna — Walk-ins & conversion tracked","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-044","Sales","Retail SOP","Perinthalmanna","Perinthalmanna — Customer follow-ups completed and logged","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-045","Sales","Retail SOP","Perinthalmanna","Perinthalmanna — Store readiness & SOP adherence checked before open","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-046","Sales","Retail SOP","Perinthalmanna","Perinthalmanna — Pending customer issues updated","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-047","Sales","Retail SOP","Manjeri","Manjeri — Daily sales vs target recorded and shared","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-048","Sales","Retail SOP","Manjeri","Manjeri — Walk-ins & conversion tracked","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-049","Sales","Retail SOP","Manjeri","Manjeri — Customer follow-ups completed and logged","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-050","Sales","Retail SOP","Manjeri","Manjeri — Store readiness & SOP adherence checked before open","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-051","Sales","Retail SOP","Manjeri","Manjeri — Pending customer issues updated","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-052","Sales","Retail SOP","Nilambur","Nilambur — Daily sales vs target recorded and shared","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-053","Sales","Retail SOP","Nilambur","Nilambur — Walk-ins & conversion tracked","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-054","Sales","Retail SOP","Nilambur","Nilambur — Customer follow-ups completed and logged","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-055","Sales","Retail SOP","Nilambur","Nilambur — Store readiness & SOP adherence checked before open","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-056","Sales","Retail SOP","Nilambur","Nilambur — Pending customer issues updated","Daily","Retail In-Charge","Start Today","Not Started"],["IMP-057","Sales","Retail SOP","All Branches","Weekly sales target vs achievement reviewed (all branches)","Weekly","Sales Manager","Start Today","Not Started"],["IMP-058","Sales","Retail SOP","All Branches","Weekly staff performance summary prepared","Weekly","Sales Manager","Start Today","Not Started"],["IMP-059","Sales","Retail SOP","All Branches","Weekly customer feedback & missed follow-ups reviewed","Weekly","Sales Manager","Start Today","Not Started"],["IMP-060","Sales","Retail SOP","All Branches","Monthly sales performance & branch comparison completed","Monthly","Sales Manager","Start Today","Not Started"],["IMP-061","Sales","Retail SOP","All Branches","Monthly KPI review & next-month targets set","Monthly","Sales Manager","Start Today","Not Started"],["IMP-062","Wedding","Wedding SOP","All Branches","Booking: enquiry logged, availability checked, advance collected, confirmation shared","Daily","Wedding In-Charge","Live","Not Started"],["IMP-063","Wedding","Wedding SOP","All Branches","Preparation: reserved outfit inspected; alteration requested if needed","Daily","Wedding In-Charge","Live","Not Started"],["IMP-064","Wedding","Wedding SOP","All Branches","Alteration QC: quality check after stitching; rework closed before customer notify","Daily","Sub In-Charge","Live","Not Started"],["IMP-065","Wedding","Wedding SOP","All Branches","Delivery: trial done, balance collected, handover acknowledged, ERP updated","Daily","Wedding In-Charge","Live","Not Started"],["IMP-066","Wedding","Wedding SOP","All Branches","Return: booking verified, items checked, inspection done, inventory updated","Daily","Wedding In-Charge","Live","Not Started"],["IMP-067","Wedding","Wedding SOP","All Branches","Damage/Penalty: assessment logged, charges approved, settlement closed","As needed","Wedding In-Charge","Live","Not Started"],["IMP-068","Wedding","Wedding SOP","All Branches","CRM: feedback collected within 2 days of rental completion","Weekly","Wedding In-Charge","Live","Not Started"],["IMP-069","Wedding","Wedding SOP","All Branches","Daily Rental Sales Report submitted","Daily","Wedding In-Charge","Live","Not Started"],["IMP-070","Wedding","Wedding SOP","All Branches","Rental Booking Status Report submitted","Daily","Wedding In-Charge","Live","Not Started"],["IMP-071","HR","HR SOP","All Branches","Manpower requisition (MRF) used for any new/replacement hire","As needed","HR Manager","Next","Not Started"],["IMP-072","HR","HR SOP","All Branches","New joiner onboarding & induction completed as per checklist","As needed","HR Executive","Next","Not Started"],["IMP-073","HR","HR SOP","All Branches","Daily attendance records verified; exceptions logged","Daily","HR Executive","Next","Not Started"],["IMP-074","HR","HR SOP","All Branches","Payroll inputs submitted on time (monthly cycle)","Monthly","HR Executive","Next","Not Started"],["IMP-075","HR","HR SOP","All Branches","Employee grievances logged and closed within SLA","Weekly","HR Manager","Next","Not Started"],["IMP-076","HR","HR SOP","All Branches","Training attendance recorded for sessions conducted","As needed","HR Executive","Next","Not Started"],["IMP-077","HR","HR SOP","All Branches","Exit clearance & final settlement process followed","As needed","HR Manager","Next","Not Started"],["IMP-078","Production","Quality","All Branches","Production quality checklist completed and evidence retained","Daily","Production In-Charge","Next","Not Started"],["IMP-079","Production","Production SOP","All Branches","Production SOP compliance checklist completed","Daily","Production Manager","Next","Not Started"],["IMP-080","Production","DAR","All Branches","DAR — Production submitted","Daily","Production In-Charge","Next","Not Started"]];
+
+/* =================================================================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DAY = 86400000;
+const state = { P: null, L: null, demo: false, filterTxt: "", filterChip: "all", error: null, updated: null };
+
+function parseCSV(text) {
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cur); cur = ""; }
+    else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+    else if (c !== "\r") cur += c;
+  }
+  if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+const fmtD = d => d.getDate() + " " + MON[d.getMonth()];
+const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+function reportDate() {
+  const m = /[?&]date=(\d{4})-(\d{2})-(\d{2})/.exec(location.search);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : dayStart(new Date());
+}
+function normMark(v) {
+  const s = String(v == null ? "" : v).trim();
+  if (!s) return "";
+  if (/^(✓|✔|✅|v|yes|y|done)$/i.test(s)) return "✓";
+  if (/^(✗|✘|✕|x|❌|no|n)$/i.test(s)) return "✗";
+  if (/^(n\/?a|na|–|-)$/i.test(s)) return "N/A";
+  return "";
+}
+
+
+/* Date headers can come through as "15 Oct", "15 Oct 2026", "2026-10-15" or "10/15/2026" — read all of them. */
+function inferDates(labels, rep) {
+  const one = (s, mode) => {
+    s = String(s).trim(); let m;
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s))) return new Date(+m[1], +m[2] - 1, +m[3]);
+    if ((m = /^(\d{1,2})[ -]([A-Za-z]{3})[a-z]*(?:[ ,-]+(\d{4}))?$/.exec(s))) {
+      const mi = MON.findIndex(x => x.toLowerCase() === m[2].toLowerCase()); if (mi < 0) return null;
+      if (m[3]) return new Date(+m[3], mi, +m[1]);
+      let best = null;
+      for (const y of [rep.getFullYear() - 1, rep.getFullYear(), rep.getFullYear() + 1]) { const d = new Date(y, mi, +m[1]); if (best === null || Math.abs(d - rep) < Math.abs(best - rep)) best = d; }
+      return best;
+    }
+    if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s))) return mode === "DMY" ? new Date(+m[3], +m[2] - 1, +m[1]) : new Date(+m[3], +m[1] - 1, +m[2]);
+    return null;
+  };
+  for (const mode of ["MDY", "DMY"]) {
+    const d0 = one(labels[0], mode), d1 = labels.length > 1 ? one(labels[1], mode) : d0;
+    if (d0 && d1 && (labels.length === 1 || Math.round((d1 - d0) / DAY) === 1))
+      return labels.map((_, k) => new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + k));
+  }
+  throw new Error("Date headers not readable (expected e.g. “15 Oct”): " + labels[0]);
+}
+
+/* ---------- parse the Tracker grid ---------- */
+function parseTracker(grid, rep) {
+  const hi = grid.findIndex(r => String(r[0] || "").trim() === "ID");
+  if (hi < 0) throw new Error("Could not read the “" + CONFIG.FEED_TAB + "” tab (no header row starting with “ID”). Add the Feed tab to your sheet — see “First time?” below.");
+  const h = grid[hi].map(x => String(x || "").trim());
+  const ix = n => h.indexOf(n);
+  const need = ["Department","Workstream","Branch","Implementation Activity","Frequency","Owner","Phase","Rollout Status"];
+  const miss = need.filter(n => ix(n) < 0);
+  if (miss.length) throw new Error("Missing column(s) in the Feed tab: " + miss.join(", "));
+  const c0 = ix("Rollout Status") + 1;
+  const dateCols = []; for (let c = c0; c < h.length; c++) if (h[c]) dateCols.push(c);
+  if (!dateCols.length) throw new Error("No date columns found in the “" + CONFIG.FEED_TAB + "” tab (they should follow Rollout Status).");
+  const dates = inferDates(dateCols.map(c => h[c]), rep);
+  const rows = [];
+  for (let r = hi + 1; r < grid.length; r++) {
+    const g = grid[r]; const act = String(g[ix("Implementation Activity")] || "").trim();
+    if (!act) continue;
+    const o = {
+      id: String(g[0] || "").trim(), dept: String(g[ix("Department")] || "").trim(), ws: String(g[ix("Workstream")] || "").trim(),
+      br: String(g[ix("Branch")] || "").trim(), act, freq: String(g[ix("Frequency")] || "").trim(), own: String(g[ix("Owner")] || "").trim(),
+      ph: String(g[ix("Phase")] || "").trim(), st: String(g[ix("Rollout Status")] || "").trim(),
+      marks: dateCols.map(c => normMark(g[c]))
+    };
+    o.mon = o.freq === "Daily" && (o.ph === "Live" || o.ph === "Start Today");
+    rows.push(o);
+  }
+  return { rows, dates, labels: dateCols.map(c => h[c]) };
+}
+
+function parseLog(grid) {
+  const hi = grid.findIndex(r => String(r[0] || "").trim() === "Review Date");
+  if (hi < 0) return null;
+  const h = grid[hi].map(x => String(x || "").trim());
+  const ix = n => h.indexOf(n);
+  const out = { open: 0, overdue: 0, closed: 0, nonc: 0, part: 0, late: 0, n: 0 };
+  for (let r = hi + 1; r < grid.length; r++) {
+    const g = grid[r]; if (!String(g[0] || "").trim()) continue;
+    out.n++;
+    const fu = String(g[ix("Follow-up Status")] || "").trim(), res = String(g[ix("Compliance Result")] || "").trim();
+    const rec = String(g[ix("Received?")] || "").trim(), flag = String(g[ix("Flag")] || "").trim();
+    if (fu === "Open") out.open++; if (fu === "Closed") out.closed++; if (/overdue/i.test(flag)) out.overdue++;
+    if (res === "Non-compliant") out.nonc++; if (res === "Partial") out.part++; if (rec === "No" || rec === "Late") out.late++;
+  }
+  return out;
+}
+
+/* ---------- compute ---------- */
+function compute(P, rep, F) {
+  const n = P.dates.length;
+  const t = Math.round((rep - P.dates[0]) / DAY);          // index of report date in window
+  const todayIdx = t >= 0 && t < n ? t : -1;
+  const daysEl = Math.max(0, Math.min(t + 1, n));
+  const rows = P.rows.filter(r => (!F.dept || r.dept === F.dept) && (!F.br || r.br === F.br)).map(r => {
+    const done = r.marks.filter(m => m === "✓").length, miss = r.marks.filter(m => m === "✗").length;
+    const naTo = r.marks.slice(0, Math.max(0, t + 1)).filter(m => m === "N/A").length;
+    const exp = r.mon ? Math.max(daysEl - naTo, done + miss) : done + miss;
+    const tm = todayIdx >= 0 ? r.marks[todayIdx] : "";
+    const today = tm === "✓" ? "done" : tm === "✗" ? "miss" : tm === "N/A" ? "na" : (r.mon && todayIdx >= 0 ? "pend" : "");
+    return Object.assign({}, r, { done, miss, exp, today, score: exp ? done / exp : null });
+  });
+  const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
+  const K = {
+    controls: rows.length, monitored: rows.filter(r => r.mon).length,
+    nDone: rows.filter(r => r.today === "done").length, nMiss: rows.filter(r => r.today === "miss").length, nPend: rows.filter(r => r.today === "pend").length,
+    done: sum(rows, r => r.done), exp: sum(rows, r => r.exp), verified: rows.filter(r => r.st === "Implemented – Verified").length,
+    live: rows.filter(r => r.ph === "Live").length, start: rows.filter(r => r.ph === "Start Today").length, next: rows.filter(r => r.ph === "Next").length
+  };
+  K.dayDen = K.nDone + K.nMiss + K.nPend;
+  const group = key => {
+    const m = new Map();
+    rows.forEach(r => { const k = r[key] || "—"; if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
+    return [...m.entries()].map(([name, a]) => {
+      const d = sum(a, x => x.done), e = sum(a, x => x.exp);
+      return { name, n: a.length, miss: a.filter(x => x.today === "miss").length, pend: a.filter(x => x.today === "pend").length, score: e ? d / e : null };
+    }).sort((a, b) => (b.miss - a.miss) || ((a.score == null ? 2 : a.score) - (b.score == null ? 2 : b.score)) || a.name.localeCompare(b.name));
+  };
+  const status = ["Not Started","In Progress","Issued – Monitoring","Implemented – Monitoring","Implemented – Verified","Blocked"].map(s => ({ s, c: rows.filter(r => r.st === s).length }));
+  const trend = [];
+  for (let k = 0; k < Math.min(daysEl, n); k++) {
+    const ok = rows.filter(r => r.marks[k] === "✓").length, no = rows.filter(r => r.marks[k] === "✗").length;
+    const mon = rows.filter(r => r.mon), monOk = mon.filter(r => r.marks[k] === "✓").length, monNA = mon.filter(r => r.marks[k] === "N/A").length;
+    trend.push({ label: fmtD(P.dates[k]), ok, no, pct: mon.length - monNA > 0 ? monOk / (mon.length - monNA) : 0 });
+  }
+  return { rows, K, todayIdx, owner: group("own"), dept: group("dept"), ws: group("ws"), br: group("br"), status, trend };
+}
+
+/* ---------- render ---------- */
+const pct = v => v == null ? "–" : Math.round(v * 100) + "%";
+const scCls = v => v == null ? "mute" : v >= .9 ? "good" : v >= .7 ? "warn" : "bad";
+function kpiCls(v, good, ok) { return v == null ? "mute" : v >= good ? "good" : v >= ok ? "warn" : "bad"; }
+
+function renderKPIs(R) {
+  const K = R.K;
+  const comp = K.dayDen ? K.nDone / K.dayDen : null, overall = K.exp ? K.done / K.exp : null, ver = K.controls ? K.verified / K.controls : null;
+  const cards = [
+    ["ACTIVE CONTROLS", K.controls, "", K.monitored + " checked daily"],
+    ["TODAY'S COMPLETION", pct(comp), kpiCls(comp, .9, .7), K.nDone + " of " + K.dayDen + " checks done"],
+    ["FOLLOW-UPS TO MAKE", K.nMiss, K.nMiss ? "bad" : "good", "marked ✗ today — call the owner"],
+    ["NOT YET MARKED", K.nPend, K.nPend ? "warn" : "good", "daily checks awaiting a mark"],
+    ["OVERALL COMPLIANCE", pct(overall), kpiCls(overall, .9, .7), K.done + " ✓ of " + K.exp + " expected checks"],
+    ["FULLY VERIFIED", pct(ver), "", K.verified + " of " + K.controls + " controls verified"]
+  ];
+  $("#kpis").innerHTML = cards.map(c => `<div class="kpi"><div class="l">${c[0]}</div><div class="v ${c[2]}">${c[1]}</div><div class="c">${c[3]}</div></div>`).join("");
+  $("#stripR").textContent = `LIVE ${K.live}  ·  START TODAY ${K.start}  ·  NEXT ${K.next}`;
+}
+function renderQueue(R) {
+  const mk = (list, cls, empty) => list.length ? list.map((r, i) => `<div class="q"><div class="n ${cls}">${i + 1}</div><div class="a">${esc(r.act)}<div class="mute" style="font-size:11px">${esc(r.id)} · ${esc(r.dept)}${r.br && r.br !== "All Branches" ? " · " + esc(r.br) : ""}</div></div><div class="o">${esc(r.own)}</div></div>`).join("") : `<div class="empty">${empty}</div>`;
+  const miss = R.rows.filter(r => r.today === "miss"), pend = R.rows.filter(r => r.today === "pend");
+  $("#qMiss").innerHTML = mk(miss, "bad", "✓ Nothing marked ✗ today");
+  $("#qPend").innerHTML = mk(pend, "warn", R.todayIdx < 0 ? "Report date is outside the tracker window" : "✓ Every daily check has a mark today");
+  $("#nMiss").textContent = miss.length ? "· " + miss.length : ""; $("#nPend").textContent = pend.length ? "· " + pend.length : "";
+}
+function scTable(list) {
+  if (!list.length) return `<div class="empty mute">No data</div>`;
+  return `<table><tr><th>NAME</th><th>CONTROLS</th><th>✗ TODAY</th><th>○ PEND.</th><th>SCORE</th><th>PROGRESS</th></tr>` +
+    list.map(g => `<tr><td>${esc(g.name)}</td><td>${g.n}</td><td class="${g.miss ? "bad" : ""}" style="${g.miss ? "background:var(--red-l);font-weight:700" : ""}">${g.miss}</td><td>${g.pend}</td><td class="${scCls(g.score)}" style="font-weight:700">${pct(g.score)}</td><td><span class="bartrack"><i style="width:${g.score == null ? 0 : Math.round(g.score * 100)}%"></i></span></td></tr>`).join("") + `</table>`;
+}
+function renderScorecards(R) {
+  $("#scOwner").innerHTML = scTable(R.owner); $("#scDept").innerHTML = scTable(R.dept); $("#scWs").innerHTML = scTable(R.ws); $("#scBr").innerHTML = scTable(R.br);
+  const tot = R.K.controls || 1;
+  $("#rollout").innerHTML = `<table><tr><th>STATUS</th><th>COUNT</th><th>SHARE</th><th>PROGRESS</th></tr>` + R.status.map(s => `<tr><td>${esc(s.s)}</td><td>${s.c}</td><td>${Math.round(s.c / tot * 100)}%</td><td><span class="bartrack" style="width:120px"><i style="width:${Math.round(s.c / tot * 100)}%"></i></span></td></tr>`).join("") + `</table>`;
+  const L = state.L;
+  $("#logBox").innerHTML = L ? `<table><tr><th>MEASURE</th><th>COUNT</th></tr>` + [["Open follow-ups", L.open, 1], ["Overdue (next follow-up date passed)", L.overdue, 1], ["Closed follow-ups", L.closed, 0], ["Non-compliant results logged", L.nonc, 0], ["Partial results logged", L.part, 0], ["Late / not received submissions", L.late, 0]]
+    .map(x => `<tr><td>${x[0]}</td><td style="font-weight:700" class="${x[2] && x[1] > 0 ? "bad" : ""}">${x[1]}</td></tr>`).join("") + `</table>` :
+    `<div class="empty mute" style="font-weight:400">${state.demo ? "Demo mode — no follow-up log connected." : "Add the Feed Log tab to your sheet to show follow-up log numbers."}</div>`;
+}
+function svgBars(data, w, h, o) {
+  const padL = 34, padB = 26, padT = 8, W = w - padL - 6, H = h - padB - padT, n = Math.max(data.length, 1);
+  const bw = Math.min(26, W / n * .62), step = W / n;
+  const max = o.max || Math.max(1, ...data.map(d => o.stack ? d.a + d.b : d.a));
+  let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img">`;
+  for (let i = 0; i <= 4; i++) { const y = padT + H - H * i / 4; s += `<line x1="${padL}" x2="${w - 6}" y1="${y}" y2="${y}" stroke="#e7e0d0"/><text x="${padL - 5}" y="${y + 3}" font-size="9" text-anchor="end" fill="#8c8c8c">${o.fmt(max * i / 4)}</text>`; }
+  data.forEach((d, i) => {
+    const x = padL + step * i + (step - bw) / 2;
+    const ha = H * d.a / max, hb = o.stack ? H * d.b / max : 0;
+    s += `<g><title>${esc(d.label)}: ${o.tip(d)}</title>`;
+    s += `<rect x="${x}" y="${padT + H - ha}" width="${bw}" height="${ha}" fill="${o.c1}" rx="2"/>`;
+    if (o.stack && hb > 0) s += `<rect x="${x}" y="${padT + H - ha - hb}" width="${bw}" height="${hb}" fill="${o.c2}" rx="2"/>`;
+    s += `<text x="${x + bw / 2}" y="${h - 9}" font-size="9" text-anchor="middle" fill="#8c8c8c">${esc(d.label)}</text></g>`;
+  });
+  return s + `</svg>`;
+}
+function renderCharts(R) {
+  const t = R.trend;
+  if (!t.length) { $("#ch1").innerHTML = $("#ch2").innerHTML = `<div class="empty mute" style="font-weight:400">No days to show yet</div>`; return; }
+  $("#ch1").innerHTML = svgBars(t.map(x => ({ label: x.label, a: x.ok, b: x.no })), 560, 230, { stack: true, c1: "#37a679", c2: "#c0392b", fmt: v => Math.round(v), tip: d => `${d.a} ✓, ${d.b} ✗` });
+  $("#ch2").innerHTML = svgBars(t.map(x => ({ label: x.label, a: x.pct })), 560, 230, { max: 1, c1: "#b8924a", fmt: v => Math.round(v * 100) + "%", tip: d => Math.round(d.a * 100) + "%" });
+}
+function renderTable(R, P) {
+  let rows = R.rows;
+  if (state.filterChip !== "all") rows = rows.filter(r => r.today === state.filterChip);
+  const q = state.filterTxt.trim().toLowerCase();
+  if (q) rows = rows.filter(r => (r.act + " " + r.own + " " + r.ws + " " + r.dept + " " + r.br + " " + r.id).toLowerCase().includes(q));
+  $("#tblCount").textContent = rows.length + " of " + R.rows.length + " controls";
+  const stCls = s => ({ "Implemented – Verified": "s-ver", "Implemented – Monitoring": "s-mon", "Issued – Monitoring": "s-iss", "In Progress": "s-prog", "Blocked": "s-blk" }[s] || "s-not");
+  const phCls = p => p === "Live" ? "ph-live" : p === "Start Today" ? "ph-start" : "ph-next";
+  const tdy = { done: ["p-done", "✓ Done"], miss: ["p-miss", "✗ Follow up"], pend: ["p-pend", "○ Pending"], na: ["p-na", "– N/A"] };
+  $("#tbl").innerHTML = `<tr><th>ID</th><th>Dept</th><th>Workstream</th><th>Branch</th><th>Activity</th><th>Owner</th><th class="c">Phase</th><th class="c">Rollout status</th><th class="c">Today</th><th class="c">Score</th><th>Days</th></tr>` +
+    rows.map(r => {
+      const dots = r.marks.map((m, k) => { const fut = k > R.todayIdx; return `<span class="dot ${fut ? "f" : m === "✓" ? "g" : m === "✗" ? "r" : m === "N/A" ? "n" : ""} ${k === R.todayIdx ? "t" : ""}" title="${fmtD(P.dates[k])}: ${m || (fut ? "—" : "not marked")}"></span>`; }).join("");
+      const td = tdy[r.today];
+      return `<tr><td class="mute" style="font-size:11px">${esc(r.id)}</td><td>${esc(r.dept)}</td><td>${esc(r.ws)}</td><td>${esc(r.br)}</td><td style="min-width:260px">${esc(r.act)}</td><td>${esc(r.own)}</td><td class="c"><span class="pill ${phCls(r.ph)}">${esc(r.ph)}</span></td><td class="c"><span class="pill ${stCls(r.st)}">${esc(r.st)}</span></td><td class="c">${td ? `<span class="pill ${td[0]}">${td[1]}</span>` : ""}</td><td class="c ${scCls(r.score)}" style="font-weight:700">${pct(r.score)}</td><td><div class="dots">${dots}</div></td></tr>`;
+    }).join("");
+}
+
+function fillFilters(P) {
+  const uniq = k => [...new Set(P.rows.map(r => r[k]).filter(Boolean))].sort();
+  const keep = (sel, vals, label) => { const cur = sel.value; sel.innerHTML = `<option value="">${label}</option>` + vals.map(v => `<option>${esc(v)}</option>`).join(""); sel.value = vals.includes(cur) ? cur : ""; };
+  keep($("#deptSel"), uniq("dept"), "All departments"); keep($("#brSel"), uniq("br"), "All branches");
+}
+function render() {
+  const P = state.P; if (!P) return;
+  const rep = reportDate();
+  $("#repDate").textContent = rep.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const F = { dept: $("#deptSel").value, br: $("#brSel").value };
+  const R = compute(P, rep, F);
+  const t = Math.round((rep - P.dates[0]) / DAY);
+  $("#stripL").textContent = `Monitoring since ${P.dates[0].getDate()} ${MON[P.dates[0].getMonth()]} ${P.dates[0].getFullYear()}  ·  Day ${Math.max(0, t + 1)} of tracking  ·  window ends ${fmtD(P.dates[P.dates.length - 1])}`;
+  renderKPIs(R); renderQueue(R); renderScorecards(R); renderCharts(R); renderTable(R, P);
+}
+
+/* ---------- data ---------- */
+function demoGrid() {
+  const rep = reportDate(), start = new Date(rep.getFullYear(), rep.getMonth(), rep.getDate() - 1);
+  const head = ["ID","Department","Workstream","Branch","Implementation Activity","Frequency","Owner","Phase","Rollout Status"];
+  const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  for (let k = 0; k < 28; k++) head.push(iso(new Date(start.getFullYear(), start.getMonth(), start.getDate() + k)));
+  const g = [head]; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  DEMO_ITEMS.forEach(it => {
+    const r = [it[0], it[1], it[2], it[3], it[4], it[5], it[6], it[7], it[8]];
+    for (let k = 0; k < 28; k++) { let m = ""; if (k === 0 && it[7] !== "Next") m = rnd() < .82 ? "✓" : "✗"; if (k === 1 && it[7] !== "Next" && rnd() < .55) m = rnd() < .88 ? "✓" : "✗"; r.push(m); }
+    g.push(r);
+  });
+  return g;
+}
+const LS = "mocca_sheet_link";
+const lsGet = () => { try { return localStorage.getItem(LS) || ""; } catch (e) { return ""; } };
+const lsSet = v => { try { v ? localStorage.setItem(LS, v) : localStorage.removeItem(LS); } catch (e) {} };
+function sheetIdFrom(s) {
+  s = String(s || "").trim(); if (!s) return null;
+  const m = /\/d\/([a-zA-Z0-9_-]{20,})/.exec(s) || /^([a-zA-Z0-9_-]{25,})$/.exec(s);
+  return m ? m[1] : null;
+}
+function currentLink() {
+  const q = /[?&]sheet=([^&]+)/.exec(location.search);
+  if (q) return decodeURIComponent(q[1]);
+  return lsGet() || CONFIG.DEFAULT_SHEET_LINK || "";
+}
+const gviz = (id, tab) => `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(tab)}`;
+const NETMSG = "Google refused to share the sheet data. Most common causes: (1) the file is an Excel upload — if you see “.XLSX” next to the file name, use File → Save as Google Sheets and paste the NEW link; (2) sharing is not “Anyone with the link”; (3) the Feed tab has not been added yet.";
+function gridFromGviz(r) {
+  if (!r || r.status !== "ok" || !r.table) throw new Error(NETMSG);
+  const cols = r.table.cols.map(c => String(c.label || c.id || ""));
+  const rows = r.table.rows.map(rw => (rw.c || []).map(c => (c && c.v != null ? String(c.v) : "")));
+  return [cols, ...rows];
+}
+let jsonpN = 0;
+/* Fallback that works even when the browser blocks fetch (e.g. page opened from a file, or CORS): load the data with a <script> tag */
+function jsonp(id, tab) {
+  return new Promise((resolve, reject) => {
+    const name = "__gv" + (++jsonpN) + "_" + Date.now(), s = document.createElement("script");
+    const done = () => { clearTimeout(t); delete window[name]; if (s.parentNode) s.parentNode.removeChild(s); };
+    const t = setTimeout(() => { done(); reject(new Error("timeout")); }, 20000);
+    s.onerror = () => { done(); reject(new Error("blocked")); };
+    window[name] = r => { clearTimeout(t); window[name].called = true; resolve(r); };
+    s.onload = () => setTimeout(() => { if (!window[name] || !window[name].called) { done(); reject(new Error("no data")); } else done(); }, 30);
+    s.src = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json;responseHandler:${name}&headers=1&sheet=${encodeURIComponent(tab)}&_=${Date.now()}`;
+    document.head.appendChild(s);
+  });
+}
+async function getGrid(id, tab) {
+  let res;
+  try { res = await fetch(gviz(id, tab) + "&_=" + Date.now()); }
+  catch (e) {
+    try { return gridFromGviz(await jsonp(id, tab)); }
+    catch (e2) { throw new Error(NETMSG); }
+  }
+  if (!res.ok) throw new Error("Google returned HTTP " + res.status + " — is the sheet shared as “Anyone with the link”?");
+  const t = await res.text();
+  if (/^\s*<(!doctype|html)/i.test(t)) throw new Error("Google asked for a sign-in — set sharing to “Anyone with the link → Viewer”.");
+  return parseCSV(t);
+}
+function setPill(kind, txt) { const p = $("#pill"); p.className = "pill-live" + (kind ? " " + kind : ""); p.textContent = txt; }
+const hhmm = d => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+async function load() {
+  $("#rIcon").classList.add("spin"); $("#msg").innerHTML = "";
+  const link = currentLink(), id = sheetIdFrom(link);
+  try {
+    const rep = reportDate();
+    state.demo = !id;
+    let grid;
+    if (state.demo) grid = demoGrid();
+    else {
+      grid = await getGrid(id, CONFIG.FEED_TAB);
+      state.L = null;
+      try { state.L = parseLog(await getGrid(id, CONFIG.LOG_TAB)); } catch (e) { state.L = null; }
+    }
+    state.P = parseTracker(grid, rep);
+    state.updated = new Date(); state.error = null;
+    $("#linkIn").value = link;
+    const sb = $("#sheetBtn");
+    if (id) { sb.href = "https://docs.google.com/spreadsheets/d/" + id + "/edit"; sb.style.display = ""; } else sb.style.display = "none";
+    if (state.demo) {
+      setPill("demo", "Sample data · not connected · " + hhmm(state.updated));
+      $("#msg").innerHTML = `<div class="notice demo"><b>Sample data.</b> Not your sheet yet — paste your Google Sheet link in <a href="#source"><b>Data source</b></a> (bottom of the page) and press <b>Load sheet</b>.</div>`;
+      $("#srcMsg").textContent = "Showing sample data.";
+    } else {
+      setPill("", "Live from Google Sheet · updated " + hhmm(state.updated));
+      $("#srcMsg").textContent = `Loaded ${state.P.rows.length} controls` + (state.L ? ` and ${state.L.n} follow-up log rows.` : " (no follow-up log tab found).");
+    }
+    fillFilters(state.P); render();
+  } catch (e) {
+    state.error = e;
+    setPill("err", "Could not load · " + hhmm(new Date()));
+    $("#msg").innerHTML = `<div class="notice err"><b>Could not load the sheet.</b> ${esc(e.message)}${state.P ? " Showing the last data loaded." : ""}</div>`;
+    $("#srcMsg").textContent = "Error: " + e.message;
+  }
+  $("#rIcon").classList.remove("spin");
+}
+function connect() {
+  const v = $("#linkIn").value.trim();
+  if (!sheetIdFrom(v)) { $("#srcMsg").textContent = "That does not look like a Google Sheet link. It should contain /spreadsheets/d/…"; return; }
+  if (/rtpof=true/.test(v)) { $("#srcMsg").textContent = "This link is an Excel (.XLSX) file opened in Sheets. In Sheets use File → Save as Google Sheets, then paste the new link here."; return; }
+  lsSet(v); $("#srcMsg").textContent = "Loading…"; load();
+}
+$("#connectBtn").onclick = connect;
+$("#linkIn").onkeydown = e => { if (e.key === "Enter") connect(); };
+$("#sampleBtn").onclick = () => { lsSet(""); history.replaceState(null, "", location.pathname); $("#linkIn").value = ""; CONFIG.DEFAULT_SHEET_LINK = ""; load(); };
+$("#refreshBtn").onclick = load;
+["#deptSel", "#brSel"].forEach(s => $(s).onchange = render);
+$("#q").oninput = e => { state.filterTxt = e.target.value; render(); };
+$("#chips").onclick = e => { const c = e.target.closest(".chip"); if (!c) return; document.querySelectorAll(".chip").forEach(x => x.classList.remove("on")); c.classList.add("on"); state.filterChip = c.dataset.f; render(); };
+document.addEventListener("visibilitychange", () => { if (!document.hidden && state.updated && Date.now() - state.updated > 60000) load(); });
+if (CONFIG.AUTO_REFRESH_MINUTES > 0) setInterval(load, CONFIG.AUTO_REFRESH_MINUTES * 60000);
+$("#linkIn").value = currentLink();
+load();
+</script>
+</body>
+</html>
